@@ -1,0 +1,28 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+*.spec
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Data (large files)
+data/raw/
+data/processed/*.csv
+
+# Models (large binaries)
+*.joblib
+*.pkl
+*.h5
+*.keras
+
+# OS
+.DS_Store
+Thumbs.db
