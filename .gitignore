@@ -22,6 +22,20 @@ data/processed/*.csv
 *.pkl
 *.h5
 *.keras
+!models/phishing_v14.joblib
+
+# Next.js
+web/.next/
+web/node_modules/
+web/out/
+web/.env.local
+
+# Logs & Audit
+audit_*.txt
+audit_*.csv
+deployment_*.txt
+final_audit_*.txt
+*.log
 
 # OS
 .DS_Store

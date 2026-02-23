@@ -24,7 +24,7 @@ from sklearn.metrics import (
 )
 from scipy.sparse import hstack
 from lightgbm import LGBMClassifier
-from features import extract_features   # enhanced version
+from features import extract_features, _get_hostname   # enhanced version
 
 RESULTS = []
 
@@ -113,7 +113,7 @@ print("  COMPARE ALL — Phishing Detector Model Comparison")
 print("=" * 60)
 print("\nLoading dataset...")
 df = pd.read_csv("data/processed/final_dataset.csv")
-df["domain"] = df["url"].apply(lambda u: urlparse(u).hostname)
+df["domain"] = df["url"].apply(_get_hostname)
 
 # Random split indices
 Xtr_r, Xte_r, ytr_r, yte_r = train_test_split(

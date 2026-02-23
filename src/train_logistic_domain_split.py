@@ -6,7 +6,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, roc_auc_score
 from sklearn.model_selection import train_test_split
 from scipy.sparse import hstack
-from features import extract_features
+from features import extract_features, _get_hostname
 
 print("Loading dataset...")
 df = pd.read_csv("data/processed/final_dataset.csv")
@@ -14,11 +14,7 @@ df = pd.read_csv("data/processed/final_dataset.csv")
 # -----------------------------
 # Extract domain for splitting
 # -----------------------------
-def get_domain(url):
-    parsed = urlparse(url)
-    return parsed.hostname
-
-df["domain"] = df["url"].apply(get_domain)
+df["domain"] = df["url"].apply(_get_hostname)
 
 # Unique domains
 unique_domains = df["domain"].unique()

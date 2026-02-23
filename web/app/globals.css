@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background-cursor: #0b0b0b;
+  --color-foreground-cursor: #e1e1e1;
+  --color-accent-cursor: #3b82f6;
+  --color-border-cursor: #1f1f1f;
+  --color-card-cursor: #141414;
+  --color-secondary-cursor: #a3a3a3;
+}
+
+:root {
+  --background: #0b0b0b;
+  --foreground: #e1e1e1;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom utility-like classes */
+.cursor-card {
+  background-color: #141414;
+  border: 1px solid #1f1f1f;
+  border-radius: 0.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.cursor-input {
+  background-color: #121212;
+  border: 1px solid #1f1f1f;
+  transition: all 200ms ease;
+  outline: none;
+}
+
+.cursor-input:focus {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+.bg-glow {
+  background: radial-gradient(circle at top center, rgba(37, 99, 235, 0.08) 0%, transparent 70%);
+}
+
+@keyframes dropdown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-dropdown {
+  animation: dropdown 0.2s ease-out forwards;
+}

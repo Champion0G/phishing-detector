@@ -11,11 +11,11 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, roc_auc_score
 from scipy.sparse import hstack
 from lightgbm import LGBMClassifier
-from features import extract_features
+from features import extract_features, _get_hostname
 
 print("Loading dataset...")
 df = pd.read_csv("data/processed/final_dataset.csv")
-df["domain"] = df["url"].apply(lambda u: urlparse(u).hostname)
+df["domain"] = df["url"].apply(_get_hostname)
 
 # Domain-level split
 unique_domains = df["domain"].dropna().unique()

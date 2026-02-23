@@ -16,6 +16,20 @@ SUSPICIOUS_TLDS = {
     "live", "stream", "download", "loan", "win"
 }
 
+# TLDs common in professional/tech sectors (to mitigate bias)
+PROFESSIONAL_TLDS = {"io", "app", "dev"}
+
+# Domains that are highly unlikely to be phishing (Reputation List)
+REPUTABLE_DOMAINS = {
+    "google.com", "github.com", "coursera.org", "microsoft.com",
+    "apple.com", "amazon.com", "netflix.com", "linkedin.com",
+    "facebook.com", "twitter.com", "instagram.com", "youtube.com",
+    "paypal.com", "vercel.app", "netlify.app", "ghost.io",
+    "github.io", "codedex.io", "herokuap.com", "cloudfront.net",
+    "digitalocean.com", "railway.app", "render.com", "bitbucket.org",
+    "gitlab.com", "stackoverflow.com", "medium.com"
+}
+
 
 def _shannon_entropy(s: str) -> float:
     """Compute Shannon entropy of a string."""
@@ -40,16 +54,32 @@ def _max_consecutive_digits(s: str) -> int:
     return max_run
 
 
+def _get_hostname(url: str) -> str:
+    """Extract hostname reliably even if protocol is missing."""
+    try:
+        if not url.startswith(("http://", "https://", "ftp://")):
+            url = "http://" + url
+        parsed = urlparse(url)
+        return parsed.hostname or ""
+    except Exception:
+        return ""
+
+
 def extract_features(url: str) -> dict:
-    parsed = urlparse(url)
-    hostname = parsed.hostname or ""
-    path = parsed.path or ""
-    query = parsed.query or ""
+    try:
+        hostname = _get_hostname(url)
+        parsed = urlparse(url if url.startswith(("http://", "https://")) else "http://" + url)
+        path = parsed.path or ""
+        query = parsed.query or ""
+    except Exception:
+        hostname = ""
+        path = ""
+        query = ""
 
     # ── Basic counts ──────────────────────────────────────────────────────────
     features = {}
-    features["url_length"]        = len(url)
-    features["hostname_length"]   = len(hostname)
+    features["url_length"]        = min(100, len(url))
+    features["hostname_length"]   = min(50, len(hostname))
     features["num_digits"]        = sum(c.isdigit() for c in url)
     features["num_dots"]          = url.count(".")
     features["num_hyphens"]       = url.count("-")
@@ -57,6 +87,9 @@ def extract_features(url: str) -> dict:
 
     # ── IP address check ──────────────────────────────────────────────────────
     features["has_ip"] = int(bool(re.match(r"\d+\.\d+\.\d+\.\d+", hostname)))
+
+    # ── Reputation List ───────────────────────────────────────────────────────
+    features["is_reputable"] = int(any(domain in hostname.lower() for domain in REPUTABLE_DOMAINS))
 
     # ── Suspicious word count ─────────────────────────────────────────────────
     url_lower = url.lower()
@@ -69,21 +102,21 @@ def extract_features(url: str) -> dict:
     # ── Digit / letter ratio ──────────────────────────────────────────────────
     letters = sum(c.isalpha() for c in url)
     digits  = sum(c.isdigit() for c in url)
-    features["digit_to_letter_ratio"] = digits / (letters + 1)  # +1 avoids /0
+    features["digit_to_letter_ratio"] = digits / (letters + 1)
 
     # ── TLD features ──────────────────────────────────────────────────────────
     parts = hostname.split(".")
     tld   = parts[-1].lower() if parts else ""
     features["tld_length"]       = len(tld)
     features["is_suspicious_tld"] = int(tld in SUSPICIOUS_TLDS)
+    features["is_professional_tld"] = int(tld in PROFESSIONAL_TLDS)
 
     # ── Subdomain depth ───────────────────────────────────────────────────────
-    # e.g. "a.b.example.com" → 2 subdomains
     features["subdomain_count"] = max(0, len(parts) - 2)
 
     # ── Path features ─────────────────────────────────────────────────────────
-    features["path_length"] = len(path)
-    features["path_depth"]  = path.count("/")
+    features["path_length"] = min(50, len(path))
+    features["path_depth"]  = min(3, path.count("/"))
 
     # ── Query string ──────────────────────────────────────────────────────────
     features["has_query"]    = int(bool(query))
@@ -100,7 +133,31 @@ def extract_features(url: str) -> dict:
     vowels = sum(c in "aeiou" for c in hostname.lower())
     features["vowel_ratio"] = vowels / (len(hostname) + 1)
 
+    # ── Typosquatting signals ─────────────────────────────────────────────────
+    h_digits = sum(c.isdigit() for c in hostname)
+    features["digit_density_in_hostname"] = h_digits / (len(hostname) + 1)
+    features["char_substitution_risk"] = int(bool(re.search(r"[01][a-z]|[a-z][01]", hostname)))
+    features["brand_in_subdomain"] = int(any(domain in hostname.lower() and not hostname.lower().endswith(domain) for domain in REPUTABLE_DOMAINS))
+
     # ── Max consecutive digits ────────────────────────────────────────────────
     features["max_consecutive_digits"] = _max_consecutive_digits(url)
+
+    # ── High Trust Anchor & Signal Amplification ─────────────────────────────
+    # If it's a reputable domain, we suppress structural risks and amplify trust
+    if features["is_reputable"]:
+        features["path_length"] = 0
+        features["path_depth"] = 0
+        features["url_length"] = min(20, features["url_length"])
+        features["char_substitution_risk"] = 0
+        features["digit_density_in_hostname"] = 0
+        features["is_reputable"] = 10.0  # Amplify the trust signal
+    
+    # Soft Trust for professional TLDs if not reputable but clean
+    elif features["is_professional_tld"] and features["num_suspicious_words"] == 0:
+        features["is_professional_tld"] = 5.0 # Give a trust boost to tech TLDs
+    
+    # Amplify the typosquatting signal for untrusted domains
+    if features["char_substitution_risk"] > 0 and not features["is_reputable"]:
+        features["char_substitution_risk"] = 10.0
 
     return features

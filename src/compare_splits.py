@@ -15,7 +15,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, roc_auc_score, f1_score
 from scipy.sparse import hstack
 from lightgbm import LGBMClassifier
-from features import extract_features
+from features import extract_features, _get_hostname
 
 # ── Shared helpers ─────────────────────────────────────────────────────────────
 
@@ -67,7 +67,7 @@ results_random = train_and_eval(X_train_r, X_test_r, y_tr, y_te)
 
 # ── Domain split ───────────────────────────────────────────────────────────────
 print("[2/2] Domain Split (realistic) ...")
-df["domain"] = df["url"].apply(lambda u: urlparse(u).hostname)
+df["domain"] = df["url"].apply(_get_hostname)
 unique_domains = df["domain"].dropna().unique()
 train_doms, test_doms = train_test_split(unique_domains, test_size=0.2, random_state=42)
 tr_df = df[df["domain"].isin(train_doms)]

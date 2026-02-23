@@ -9,9 +9,9 @@ Requirements:
 
 import numpy as np
 import pandas as pd
-from urllib.parse import urlparse
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, roc_auc_score
+from features import url_to_sequence, _get_hostname
 
 # ── Try importing TensorFlow ───────────────────────────────────────────────────
 try:
@@ -36,12 +36,6 @@ VOCAB_SIZE = 128      # printable ASCII range
 EMBED_DIM  = 32
 BATCH_SIZE = 512
 EPOCHS     = 10
-
-# ── Character tokeniser ────────────────────────────────────────────────────────
-def url_to_sequence(url: str):
-    """Map each character to its ASCII code (capped at VOCAB_SIZE)."""
-    return [min(ord(c), VOCAB_SIZE - 1) for c in url[:MAX_LEN]]
-
 
 def encode_urls(urls):
     seqs = [url_to_sequence(u) for u in urls]
@@ -105,8 +99,8 @@ evaluate(model_r, X_te_enc_r, y_te_r, label="Random Split")
 #  DOMAIN SPLIT
 # ══════════════════════════
 print("\n[2/2] Training CNN+LSTM — Domain Split ...")
-df["domain"] = df["url"].apply(lambda u: urlparse(u).hostname)
-unique_domains = df["domain"].dropna().unique()
+df["domain"] = df["url"].apply(_get_hostname)
+unique_domains = df["domain"].unique()
 tr_doms, te_doms = train_test_split(unique_domains, test_size=0.2, random_state=42)
 tr_df = df[df["domain"].isin(tr_doms)]
 te_df = df[df["domain"].isin(te_doms)]
